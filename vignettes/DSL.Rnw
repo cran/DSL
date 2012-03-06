@@ -1,32 +1,28 @@
-\documentclass[fleqn]{article}
-\usepackage[round,longnamesfirst]{natbib}
+\documentclass[article,nojss]{jss}
 \usepackage{graphicx,keyval,thumbpdf,url}
 
-\newcommand\R{{\mathbb{R}}}
-\newcommand{\pkg}[1]{{\normalfont\fontseries{b}\selectfont #1}}
 \newcommand{\sQuote}[1]{`{#1}'}
 \newcommand{\dQuote}[1]{``{#1}''}
-\let\code=\texttt
-\let\proglang=\textsf
 \newcommand{\file}[1]{\sQuote{\textsf{#1}}}
 \newcommand{\class}[1]{\code{"#1"}}
 
-
-
+%% need no \usepackage{Sweave.sty}
+\SweaveOpts{engine=R,eps=FALSE,results=verbatim,fig=FALSE,echo=TRUE,strip.white=true}
 \AtBeginDocument{\setkeys{Gin}{width=0.6\textwidth}}
 
 \date{\today}
 \title{Distributed Storage and Lists}
+\Plaintitle{Distributed Storage and Lists}
 \author{Stefan Theu\ss{}l}
+\Plainauthor{Stefan Theussl}
 %% \VignetteIndexEntry{DSL}
 
 \sloppy{}
 
-\usepackage{Sweave}
 \begin{document}
 \maketitle
 
-\begin{abstract}
+\Abstract{
   Distributed lists are list-type objects where elements (i.e.,
   arbitrary \proglang{R} objects) are stored in serialized form on a
   distributed storage. The latter is often used in high performance
@@ -39,8 +35,25 @@
   Distributed File System. Furthermore, it offers functionality to
   operate on such lists efficiently using the MapReduce programming
   model.
-\end{abstract}
+}
 
+\Keywords{\proglang{R}, lists, MapReduce}
+\Plainkeywords{R, lists, MapReduce}
+
+\Address{
+  Stefan Theussl\\
+  Institute for Statistics and Mathematics\\
+  WU Wirtschaftsuniversit\"at Wien\\
+  Augasse 2--6\\
+  1090 Wien, Austria
+  E-mail: \email{Stefan.Theussl@wu.ac.at}\\
+  URL: \url{http://statmath.wu.ac.at/~theussl/}\\
+}
+
+<<init, echo=FALSE>>=
+options(width = 60)
+require("DSL")
+@ %
 
 \section{Introduction}
 \label{sec:introduction}
@@ -174,38 +187,17 @@ E.g., a DS of \code{type} \code{"LFS"} using the system-wide or a
 user-defined \emph{temporary directory} as the base directory
 (\code{base\_dir}) and a chunk size of 10MB can be instanciated using
 the function \code{DStorage()}:
-\begin{Schunk}
-\begin{Sinput}
-> ds <- DStorage( type = "LFS", base_dir = tempdir(),
-+                 chunksize = 10 * 1024^2 )
-\end{Sinput}
-\end{Schunk}
+<<ds_create>>=
+ds <- DStorage( type = "LFS", base_dir = tempdir(),
+                chunksize = 10 * 1024^2 )
+@
 
 Further methods to class \class{DStorage} are a corresponding
 \code{print()} and a \code{summary()} method.
-\begin{Schunk}
-\begin{Sinput}
-> ds
-\end{Sinput}
-\begin{Soutput}
-DStorage.
-- Type: LFS
-- Base directory on storage: /tmp/Rtmp5vb4Th
-- Current chunk size [bytes]: 10485760
-\end{Soutput}
-\begin{Sinput}
-> summary(ds)
-\end{Sinput}
-\begin{Soutput}
-DStorage.
-- Type: LFS
-- Base directory on storage: /tmp/Rtmp5vb4Th
-- Current chunk size [bytes]: 10485760
-- Registered methods:
-  dir_create, fetch_last_line, get, list_directory
-  put, read_lines, unlink, write_lines
-\end{Soutput}
-\end{Schunk}
+<<ds_print_summary>>=
+ds
+summary(ds)
+@
 
 \subsubsection{Distributed Lists}
 
@@ -219,21 +211,14 @@ support coercion of \proglang{R} lists and character vectors
 representing paths to data repositories as well as coercion of
 \class{DList} objects to lists.
 
-\begin{Schunk}
-\begin{Sinput}
-> dl <- DList( letters = letters, numbers = 0:9  )
-> l <- as.list( letters )
-> names(l) <- LETTERS
-> dl2 <- as.DList(l)
-> identical( as.list(dl2), l )
-\end{Sinput}
-\begin{Soutput}
-[1] TRUE
-\end{Soutput}
-\begin{Sinput}
-> dl3 <- as.DList( system.file("examples", package = "DSL") )
-\end{Sinput}
-\end{Schunk}
+<<dl_create>>=
+dl <- DList( letters = letters, numbers = 0:9  )
+l <- as.list( letters )
+names(l) <- LETTERS
+dl2 <- as.DList(l)
+identical( as.list(dl2), l )
+dl3 <- as.DList( system.file("examples", package = "DSL") )
+@
 
 Note that the above example uses a default storage type, namely
 \code{"LFS"} using a \emph{temporary directory} generated with
@@ -241,11 +226,9 @@ Note that the above example uses a default storage type, namely
 storage the \code{DStorage} argument to the \code{DList()}
 constructor is used.
 
-\begin{Schunk}
-\begin{Sinput}
-> dl <- DList( letters = letters, numbers = 0:9, DStorage = ds )
-\end{Sinput}
-\end{Schunk}
+<<dl_create2>>=
+dl <- DList( letters = letters, numbers = 0:9, DStorage = ds )
+@
 
 Conceptually we want a distributed list to support a set
 of intuitive operations, like accessing each element (stored somewhere
@@ -271,41 +254,13 @@ interfaces which must be implemented by the \class{DList} class:
   express most of the computation on \class{DList} objects.
 \end{description}
 
-\begin{Schunk}
-\begin{Sinput}
-> dl
-\end{Sinput}
-\begin{Soutput}
-A DList with 2 elements
-\end{Soutput}
-\begin{Sinput}
-> summary(dl)
-\end{Sinput}
-\begin{Soutput}
-        Length Class  Mode     
-letters 26     -none- character
-numbers 10     -none- numeric  
-\end{Soutput}
-\begin{Sinput}
-> names( dl2 )
-\end{Sinput}
-\begin{Soutput}
- [1] "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K" "L" "M" "N"
-[15] "O" "P" "Q" "R" "S" "T" "U" "V" "W" "X" "Y" "Z"
-\end{Soutput}
-\begin{Sinput}
-> length(dl3)
-\end{Sinput}
-\begin{Soutput}
-[1] 2
-\end{Soutput}
-\begin{Sinput}
-> dl3[[1]]
-\end{Sinput}
-\begin{Soutput}
-[1] "/home/theussl/lib/R/2.14/DSL/examples/file01"
-\end{Soutput}
-\end{Schunk}
+<<dl_methods>>=
+dl
+summary(dl)
+names( dl2 )
+length(dl3)
+dl3[[1]]
+@
 
 MapReduce is discussed in more detail in the next section.
 
@@ -356,43 +311,22 @@ in main memory (i.e., RAM).
   \code{c()} operator.
 \end{description}
 
-\begin{Schunk}
-\begin{Sinput}
-> dl <- DList( line1 = "This is the first line.",
-+              line2 = "Now, the second line." )
-> res <- DLapply( dl, function(x) unlist(strsplit(x, " ")) )
-> as.list( res )
-\end{Sinput}
-\begin{Soutput}
-$line1
-[1] "This"  "is"    "the"   "first" "line."
+<<dl_mapreduce>>=
+dl <- DList( line1 = "This is the first line.",
+             line2 = "Now, the second line." )
+res <- DLapply( dl, function(x) unlist(strsplit(x, " ")) )
+as.list( res )
 
-$line2
-[1] "Now,"   "the"    "second" "line." 
-\end{Soutput}
-\begin{Sinput}
-> foo <- function( keypair )
-+     list( key = paste("next_", keypair$key, sep = ""), value =
-+          gsub("first", "mapped", keypair$value) )
-> dlm <- DMap( x = dl, MAP = foo)
-> ## retrieve keys
-> unlist(DGather(dlm, keys = TRUE, names = FALSE))
-\end{Sinput}
-\begin{Soutput}
-[1] "next_line1" "next_line2"
-\end{Soutput}
-\begin{Sinput}
-> ## retrieve values
-> as.list( dlm )
-\end{Sinput}
-\begin{Soutput}
-$line1
-[1] "This is the mapped line."
+foo <- function( keypair )
+    list( key = paste("next_", keypair$key, sep = ""), value =
+         gsub("first", "mapped", keypair$value) )
 
-$line2
-[1] "Now, the second line."
-\end{Soutput}
-\end{Schunk}
+dlm <- DMap( x = dl, MAP = foo)
+## retrieve keys
+unlist(DGather(dlm, keys = TRUE, names = FALSE))
+## retrieve values
+as.list( dlm )
+@
 
 Further methods on \class{DList} objects are prefixed with
 \code{DL\_}. Currently, only methods for interacting with
@@ -405,32 +339,15 @@ the underlying \class{DStorage}  are available.
   objects. Data is automatically transferred to the new storage.
 \end{description}
 
-\begin{Schunk}
-\begin{Sinput}
-> l <- list( line1 = "This is the first line.",
-+            line2 = "Now, the second line." )
-> dl <- as.DList( l )
-> DL_storage(dl)
-\end{Sinput}
-\begin{Soutput}
-DStorage.
-- Type: LFS
-- Base directory on storage: /tmp/Rtmp5vb4Th
-- Current chunk size [bytes]: 10485760
-\end{Soutput}
-\begin{Sinput}
-> ds <- DStorage("HDFS", tempdir())
-> DL_storage(dl) <- ds
-> as.list(dl)
-\end{Sinput}
-\begin{Soutput}
-$line1
-[1] "This is the first line."
-
-$line2
-[1] "Now, the second line."
-\end{Soutput}
-\end{Schunk}
+<<dl_stor_replace, eval = FALSE>>=
+l <- list( line1 = "This is the first line.",
+           line2 = "Now, the second line." )
+dl <- as.DList( l )
+DL_storage(dl)
+ds <- DStorage("HDFS", tempdir())
+DL_storage(dl) <- ds
+as.list(dl)
+@
 
 \section{Examples}
 \label{sec:examples}
@@ -441,106 +358,93 @@ This examples demonstrates how \code{Dmap()} and \code{DReduce()} can
 be used to count words based on text files located somewhere on a
 given file system. The following two files contained in the example
 directory of the package will be used.
-\begin{Schunk}
-\begin{Sinput}
-> ## simple wordcount based on two files:
-> dir(system.file("examples", package = "DSL"))
-\end{Sinput}
-\begin{Soutput}
-[1] "file01" "file02"
-\end{Soutput}
-\end{Schunk}
+<<ex1_files>>=
+## simple wordcount based on two files:
+dir(system.file("examples", package = "DSL"))
+@
 We use a temporary directory as the base directory of a new \class{DStorage}
 object. By setting the maximum chunk size to 1 Byte we force the name
 of each file being placed in a separate chunk. Then we store the
 absolute path to the text files as elements of a \class{DList} object.
-\begin{Schunk}
-\begin{Sinput}
-> ## first force 1 chunk per file (set max chunk size to 1 byte):
-> ds <- DStorage("LFS", tempdir(), chunksize = 1L)
-> ## make "DList", i.e., read file contents and store in chunks
-> dl <- as.DList( system.file("examples", package = "DSL"),
-+                 DStorage = ds )
-\end{Sinput}
-\end{Schunk}
+<<ex1_stor>>=
+## first force 1 chunk per file (set max chunk size to 1 byte):
+ds <- DStorage("LFS", tempdir(), chunksize = 1L)
+## make "DList", i.e., read file contents and store in chunks
+dl <- as.DList( system.file("examples", package = "DSL"),
+                DStorage = ds )
+@
 Data is read into chunks (one per original file) by using a simple
 call of \code{DMap()} on the distributed list.
-\begin{Schunk}
-\begin{Sinput}
-> ## read files
-> dl <- DMap(dl, function( keypair ){
-+     list( key = keypair$key,
-+           value = tryCatch(readLines(keypair$value),
-+                            error = function(x) NA) )
-+ })
-\end{Sinput}
-\end{Schunk}
+<<ex1_read>>=
+## read files
+dl <- DMap(dl, function( keypair ){
+    list( key = keypair$key,
+          value = tryCatch(readLines(keypair$value),
+                           error = function(x) NA) )
+})
+@
 The contents of the files is split into words using the following call.
-\begin{Schunk}
-\begin{Sinput}
-> ## split into terms
-> splitwords <- function( keypair ){
-+     keys <- unlist(strsplit(keypair$value, " "))
-+     mapply( function(key, value) list( key = key, value = value),
-+             keys, rep(1L, length(keys)),
-+             SIMPLIFY = FALSE, USE.NAMES = FALSE )
-+ }
-> res <- DMap( dl, splitwords )
-> as.list(res)
-\end{Sinput}
-\begin{Soutput}
-$Hello
-[1] 1
-
-$World
-[1] 1
-
-$Bye
-[1] 1
-
-$World
-[1] 1
-
-$Hello
-[1] 1
-
-$DSL
-[1] 1
-
-$Bye
-[1] 1
-
-$DSL
-[1] 1
-\end{Soutput}
-\end{Schunk}
+<<ex1_map>>=
+## split into terms
+splitwords <- function( keypair ){
+    keys <- unlist(strsplit(keypair$value, " "))
+    mapply( function(key, value) list( key = key, value = value),
+            keys, rep(1L, length(keys)),
+            SIMPLIFY = FALSE, USE.NAMES = FALSE )
+}
+res <- DMap( dl, splitwords )
+as.list(res)
+@
 Eventually, collected intermediate results are summed.
-\begin{Schunk}
-\begin{Sinput}
-> ## now aggregate by term
-> res <- DReduce( res, sum )
-> as.list( res )
-\end{Sinput}
-\begin{Soutput}
-$Hello
-[1] 2
-
-$World
-[1] 2
-
-$DSL
-[1] 2
-
-$Bye
-[1] 2
-\end{Soutput}
-\end{Schunk}
+<<ex1_reduce>>=
+## now aggregate by term
+res <- DReduce( res, sum )
+as.list( res )
+@
 
 
-\subsection{Temperature}
+% \subsection{Temperature}
 
-TODO: Example from Hadoop book. around 30 GB of raw data.
+% TODO: Example from Hadoop book. around 30 GB of raw data.
 
+% <<>>=
+% data <- "~/tmp/NCDC"
+% require("hive")
+% require("DSL")
+
+% ## first force 1 chunk per file (set max chunk size to 1 byte):
+% ds <- DStorage("LFS", tempdir(), chunksize = 1L)
+% ## make "DList", i.e., read file contents and store in chunks
+% dl <- as.DList( data,
+%                 DStorage = ds )
+
+% dl <- DMap(dl, function( keypair ){
+%     con <- gzfile(keypair$value)
+%     lines <- tryCatch(readLines(con),
+%                       error = function(x) NA)
+%     close( con )
+%     mapply( function(key, value) list( key = key, value = value),
+%            keypair$key, lines,
+%            SIMPLIFY = FALSE, USE.NAMES = FALSE )
+% })
+
+% ds <- DStorage( "HDFS", tempdir() )
+
+% DL_storage(dl) <- ds
+
+% int <- DMap(dl, function( keypair ){
+%    airtemp <- as.integer( substr(keypair$value, 88, 92) )
+%    if( airtemp == 9999 || (! as.integer(substr(keypair$value, 93, 93))
+%    %in% c(0L,1L,4L,5L,9L)) )
+%      airtemp <- NA
+%    list(key = substr(keypair$value, 16, 19),
+%         value = airtemp)
+% })
+
+% maxtemp <- DReduce( int, function(x) max(x, na.rm = TRUE) )
+
+% as.list(maxtemp)
+% @
 
 
 \section{Conclusion and Outlook}
@@ -568,7 +472,6 @@ We are grateful to Christian Buchta for providing efficient
 \proglang{C} code for collecting partial results in \code{DReduce()}.
 
 {\small
-  \bibliographystyle{abbrvnat}
   \bibliography{DSL}
 }
 
