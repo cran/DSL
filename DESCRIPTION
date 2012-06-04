@@ -1,5 +1,5 @@
 Package: DSL
-Version: 0.1-2
+Version: 0.1-2.1
 Date: 2012-06-04
 Title: Distributed Storage and List
 Description: A package providing functions and methods for handling
@@ -15,9 +15,10 @@ Authors@R: c(person("Ingo", "Feinerer", role = "aut"), person("Stefan",
         role = "ctb"))
 License: GPL-3
 Suggests: hive (>= 0.1-14), parallel
-Packaged: 2012-06-04 11:19:18 UTC; theussl
+Packaged: 2013-04-25 08:30:12 UTC; ripley
 Author: Ingo Feinerer [aut], Stefan Theussl [aut, cre], Christian
         Buchta [ctb]
 Maintainer: Stefan Theussl <Stefan.Theussl@R-project.org>
 Repository: CRAN
-Date/Publication: 2012-06-04 13:56:49
+Date/Publication: 2013-04-25 10:35:23
+NeedsCompilation: yes
