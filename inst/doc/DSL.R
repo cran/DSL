@@ -41,7 +41,7 @@ dl <- DList( letters = letters, numbers = 0:9, DStorage = ds )
 ###################################################
 ### code chunk number 6: dl_methods
 ###################################################
-dl
+#dl
 summary(dl)
 names( dl2 )
 length(dl3)
