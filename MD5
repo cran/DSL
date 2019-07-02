@@ -1,4 +1,4 @@
-e29cfc60d53e9816f4cd2a3ed1e1a7b0 *DESCRIPTION
+96b80e21c878017d3a207b3448c7bfbc *DESCRIPTION
 a06b1cd51c249971dbe9396016f3e3a0 *NAMESPACE
 f0326bdcf5445023484f5c1aa259b481 *R/HDFS.R
 eecf94a4b1f2f9c20c75f4194d213dfe *R/LFS.R
@@ -7,7 +7,7 @@ eecf94a4b1f2f9c20c75f4194d213dfe *R/LFS.R
 0f428f6bff99f999034d4e7a7973956a *R/map.R
 ac9fd96ded6fb66c756ced9f812e0ef6 *R/reduce.R
 1c898c69b239404505f4a4fe878afded *R/storage.R
-e6f6aa1043b430a18a9bae3940243ddb *R/utils.R
+91b61eecfddeb6929e052df01bf18c74 *R/utils.R
 3d018d2833b007078189f39c04d8798a *build/vignette.rds
 ed421c17724ff751bfcaa2b859fa7f54 *inst/doc/DSL.R
 94035e6174897429374bd9ad9cc34188 *inst/doc/DSL.Rnw
@@ -20,5 +20,6 @@ ce8c3ccf47e3a3c263e2a381e0c5fac8 *man/list.Rd
 0ed5ee95bffccb163727eb5c302b973c *man/map.Rd
 672c258534bcb1ce6fe9d8d1b289dc2e *man/storage.Rd
 f3fed78402d57cf4b72db6c7592ee667 *src/collector.c
+63403ef70e2ee7eb4b9519a622b5596e *src/init.c
 94035e6174897429374bd9ad9cc34188 *vignettes/DSL.Rnw
 d236c4c23c950207a24dcc2423a2ad44 *vignettes/DSL.bib
